@@ -1,0 +1,25 @@
+{
+  "name": "coin-rush-server-typescript",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Coin Rush 服务器 —— Troupe.js 实现（每房间一个 Virtual Actor）",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "start": "tsx src/server.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "troupe": "file:../../troupejs",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

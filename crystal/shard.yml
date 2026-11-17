@@ -1,0 +1,15 @@
+name: coin-rush-server-crystal
+version: 0.1.0
+crystal: ">= 1.22"
+description: Coin Rush 服务器 —— troupe.cr + troupe-gateway 实现
+license: MIT
+dependencies:
+  troupe:
+    github: ShiningRay/troupe.cr
+    branch: main
+  troupe-gateway:
+    github: ShiningRay/troupe-gateway
+    version: ">= 0.1.2"
+targets:
+  coin-rush-server:
+    main: src/server.cr

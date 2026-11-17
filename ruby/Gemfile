@@ -1,0 +1,7 @@
+source "https://rubygems.org"
+
+# Troupe.rb：本地路径依赖（家庭仓布局；如已发布可改为 gem "troupe"）
+gem "troupe", path: "../../trouperb"
+
+gem "puma", "~> 6.4"
+gem "faye-websocket", "~> 0.11"

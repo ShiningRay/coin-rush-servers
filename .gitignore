@@ -1,0 +1,8 @@
+lib/
+bin/
+.crystal/
+deps/
+_build/
+node_modules/
+.coin-rush/
+.coin-rush-data/
