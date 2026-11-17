@@ -8,9 +8,9 @@ Coin Rush 多人竞技场的**服务器端多语言实现集**——同一个[�
 
 | 实现 | 目录 | 框架 | 游戏循环 | 广播 | 落盘 | 状态 |
 |---|---|---|---|---|---|---|
-| TypeScript | [`typescript/`](typescript/) | [troupejs](https://github.com/ShiningRay/troupejs)（私有，`file:` 依赖） | Actor 内 `registerCue("tick")` | `publishShow` + `troupe.subscribe` | SQLite（`.troupe/`） | ✅ 本机验证 |
-| Crystal | [`crystal/`](crystal/) | [troupe.cr](https://github.com/ShiningRay/troupe.cr) + [troupe-gateway](https://github.com/ShiningRay/troupe-gateway) | 边缘 100ms 驱动 `tick` Turn | Outbox → gateway | SQLite（每拍原子） | ✅ 本机验证 |
-| Ruby | [`ruby/`](ruby/) | [troupe.rb](https://github.com/ShiningRay/troupe) | 边缘 100ms 驱动 `tick` | `cast :tick` 返回快照 | PropStore（每 50 拍 `:save`） | ✅ 本机验证 |
+| TypeScript | [`typescript/`](typescript/) | [troupejs](https://github.com/ShiningRay/troupe-js)（私有，`file:` 依赖） | Actor 内 `registerCue("tick")` | `publishShow` + `troupe.subscribe` | SQLite（`.troupe/`） | ✅ 本机验证 |
+| Crystal | [`crystal/`](crystal/) | [troupe.cr](https://github.com/ShiningRay/troupe-cr) + [troupe-gateway](https://github.com/ShiningRay/troupe-gateway) | 边缘 100ms 驱动 `tick` Turn | Outbox → gateway | SQLite（每拍原子） | ✅ 本机验证 |
+| Ruby | [`ruby/`](ruby/) | [troupe.rb](https://github.com/ShiningRay/troupe-rb) | 边缘 100ms 驱动 `tick` | `cast :tick` 返回快照 | PropStore（每 50 拍 `:save`） | ✅ 本机验证 |
 | Elixir | [`elixir/`](elixir/) | [troupe-elixir](https://github.com/ShiningRay/troupe-elixir) | 边缘 100ms 驱动 `tick` | `call!` 返回快照 | 内存 PropStore（重启丢失） | ✅ 本机验证 |
 | Go | [`go/`](go/) | 无（goroutine + 互斥锁手写同语义） | 每房间 goroutine ticker | 进程内直推 | JSON 快照文件 | ⚠️ 代码就绪，本机无 Go 工具链未运行 |
 

@@ -5,7 +5,7 @@ description: Coin Rush 服务器 —— troupe.cr + troupe-gateway 实现
 license: MIT
 dependencies:
   troupe:
-    github: ShiningRay/troupe.cr
+    github: ShiningRay/troupe-cr
     branch: main
   troupe-gateway:
     github: ShiningRay/troupe-gateway
