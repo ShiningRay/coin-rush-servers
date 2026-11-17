@@ -24,28 +24,33 @@ module CoinRush
       expect_raises(RoomFullError) { agent.join(hot, "extra", "x") }
     end
 
-    it "tick 推进移动与吃币：靠近金币的玩家得分且金币重生" do
+    it "tick 推进移动与吃币（导航到最近金币，确定性）" do
       r = Troupe::ActorId.new("spec", "room", "pickup")
       agent.join(r, "p1", "alice")
-      snap = agent.snapshot(r)
-      coin = snap["coins"][0]
-      # 直接把玩家放到金币旁（走内部快照校验驱动行为）
-      px = coin["x"].as_f - PICKUP_RADIUS + 1
-      py = coin["y"].as_f
-      before = agent.tick(r) # 先推进一拍把初始位置固定下来
-      before.should_not be_nil
-
-      # 用 set_dir 朝金币移动足够拍数
-      dx = (coin["x"].as_f - px) / 100.0
-      agent.set_dir(r, "p1", dx.clamp(-1.0, 1.0), 0.0)
       score = 0_i64
-      60.times do
-        s = agent.tick(r)
-        found = s.not_nil!["players"].as_a.find { |p| p["id"].as_s == "p1" }
-        score = found["score"].as_i64 if found
-        break if score > 0
+
+      3.times do
+        snap = agent.snapshot(r)
+        p = snap["players"].as_a.first
+        coin = snap["coins"].as_a.min_by do |c|
+          dx = c["x"].as_f - p["x"].as_f
+          dy = c["y"].as_f - p["y"].as_f
+          Math.hypot(dx, dy)
+        end
+        dx = coin["x"].as_f - p["x"].as_f
+        dy = coin["y"].as_f - p["y"].as_f
+        dist = Math.hypot(dx, dy)
+
+        agent.set_dir(r, "p1", dx / dist, dy / dist)
+        steps = (dist / 24.0).ceil.to_i + 1
+        steps.times do
+          s = agent.tick(r).not_nil!
+          found = s["players"].as_a.find { |q| q["id"].as_s == "p1" }
+          score = found["score"].as_i64 if found
+        end
+        score.should eq(coin["id"] != 0 ? score : score) # 占位：下方循环断言累计
       end
-      score.should eq(1)
+      score.should eq(3)
     end
 
     it "空房间 tick 不广播（返回 players=0）" do

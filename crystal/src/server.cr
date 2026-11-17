@@ -9,7 +9,7 @@ require "option_parser"
 require "./coin_rush/edge"
 
 module CoinRush
-  def self.run(argv : Array(String)) : {Troupe::Stage, Edge}
+  def self.run(argv : Array(String)) : {Troupe::PropStore, Edge}
     host = "127.0.0.1"
     port = 8787
     db = ".coin-rush/rooms.db"

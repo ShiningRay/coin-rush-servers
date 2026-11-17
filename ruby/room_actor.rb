@@ -4,18 +4,30 @@ require "json"
 require_relative "protocol"
 
 module CoinRush
-  # 每房间一个 Virtual Actor：tick 由边缘进程 100ms 驱动（trouperb 无内存 Cue
-  # 之外的便捷驱动），广播靠 cast 返回快照给边缘。
+  # 每房间一个 Virtual Actor。落盘用 flush Cue（5s 攒批， trouperb 原生内存 Cue）；
+  # 游戏循环由边缘进程 100ms 驱动 `tick`（返回快照给边缘广播）。
   class RoomActor < Troupe::Actor
     role_id "room"
     intermission "10m"
 
-    def initial_props
-      { "tick" => 0, "seq" => 1, "players" => {}, "coins" => [] }
+    initial_props { { "tick" => 0, "seq" => 1, "players" => {}, "coins" => [] } }
+
+    def on_stage
+      fill_coins
+      # 攒批冲刷 Cue：仅在场运行，下场自动停
+      register_cue("flush", "5s") do
+        save_props if @dirty
+        @dirty = false
+      end
+    end
+
+    def off_stage
+      save_props if @dirty # 下场前兜底落盘
+      @dirty = false
     end
 
     # 进房：存在即返回快照（重连安全）；满员抛错（边缘转 error 帧）。
-    def join(props, player_id, name)
+    def join(player_id, name)
       unless props["players"].key?(player_id)
         raise "房间已满" if props["players"].size >= MAX_PLAYERS
         props["players"][player_id] = {
@@ -27,32 +39,34 @@ module CoinRush
           "dx" => 0.0, "dy" => 0.0, "score" => 0,
         }
         props["seq"] += 1
-        fill_coins(props)
-        return [:save, snapshot(props), props]
+        fill_coins
+        save_props
       end
-      [:reply, snapshot(props), props]
+      snapshot
     end
 
-    def set_dir(props, player_id, dx, dy)
+    # 移动方向（latest-wins，热路径只改内存）
+    def set_dir(player_id, dx, dy)
       p = props["players"][player_id]
-      return [:reply, :ok, props] unless p
+      return nil unless p
       p["dx"] = dx.clamp(-1.0, 1.0)
       p["dy"] = dy.clamp(-1.0, 1.0)
-      [:reply, :ok, props]
+      nil
     end
 
-    def leave(props, player_id)
-      return [:reply, :ok, props] unless props["players"].key?(player_id)
-      props["players"].delete(player_id)
-      [:save, :ok, props]
+    def leave(player_id)
+      return nil unless props["players"].delete(player_id)
+      @dirty = true
+      save_props
+      nil
     end
 
-    # 游戏循环（边缘 100ms 驱动）：推进 + 每拍返回快照；每 FLUSH_TICKS 拍落盘。
-    def tick(props)
+    # 游戏循环（边缘 100ms 驱动）：推进 + 返回全房快照；空房间返回占位。
+    def tick
       props["tick"] += 1
       players = props["players"].values
       if players.empty?
-        return [:reply, { "players" => 0 }, props]
+        return { "players" => 0 }
       end
 
       step = PLAYER_SPEED * TICK_MS / 1000.0
@@ -73,16 +87,11 @@ module CoinRush
         coin["y"] = PLAYER_RADIUS + rand * (ARENA_H - PLAYER_RADIUS * 2)
         props["seq"] += 1
       end
-
-      snap = snapshot(props)
-      if props["tick"] % FLUSH_TICKS == 0
-        [:save, snap, props] # 持久成功后回复快照
-      else
-        [:reply, snap, props]
-      end
+      @dirty = true
+      snapshot
     end
 
-    def snapshot(props)
+    def snapshot
       {
         "tick" => props["tick"],
         "players" => props["players"].values.map do |p|
@@ -95,7 +104,7 @@ module CoinRush
 
     private
 
-    def fill_coins(props)
+    def fill_coins
       while props["coins"].size < COIN_COUNT
         props["coins"] << {
           "id" => props["seq"],

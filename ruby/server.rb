@@ -10,8 +10,10 @@
 # 并发模型：puma 多线程处理连接；房间状态由 troupe.rb Actor 严格串行；
 # 游戏循环由边缘驱动线程（Driver）每 100ms cast :tick 并广播返回的快照。
 
+gem "puma", ">= 6.4"
 require "puma"
 require "puma/server"
+gem "faye-websocket", ">= 0.11"
 require "faye/websocket"
 require "json"
 require "securerandom"
@@ -157,6 +159,4 @@ puts "   静态: #{static_dir ? "同端口托管 #{static_dir}" : "未检测到 
 
 puma = Puma::Server.new(app)
 puma.add_tcp_listener "127.0.0.1", ENV.fetch("PORT", "8787").to_i
-puma.min_threads = 0
-puma.max_threads = 16
 puma.run.join

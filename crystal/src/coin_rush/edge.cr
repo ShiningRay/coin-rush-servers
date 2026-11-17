@@ -50,7 +50,7 @@ module CoinRush
       when "join"
         room = sanitize(session.query["room"]?, "lobby", 32)
         name = sanitize(msg["name"]?.try(&.as_s?), "玩家", 12)
-        player_id = session.meta["player_id"]? || Random::Secure.uuid
+        player_id = session.meta["player_id"]? || Random::Secure.hex(16)
         session.meta["player_id"] = player_id
         session.meta["room"] = room
         @mutex.synchronize { @room_conns[room].add(session.id) }
@@ -135,19 +135,21 @@ module CoinRush
 
     private def sanitize(value : String?, fallback : String, limit : Int32) : String
       cleaned = value || ""
-      cleaned = cleaned.gsub(/[^\w\u4e00-\u9fa5-]/, "")[0, limit]
+      # PCRE2 不支持 \u 转义：CJK 用码点区间 \x{4e00}-\x{9fa5}
+      cleaned = cleaned.gsub(/[^\w\x{4e00}-\x{9fa5}-]/, "")[0, limit]
       cleaned.empty? ? fallback : cleaned
     end
   end
 
   # 协议帧组装（形状契约见 PROTOCOL.md）。
+  # 注意 JSON::Any 内嵌时必须 to_json（to_s 是调试表示，含 "=>"）。
   module Protocol
     def self.hello(player_id : String, snapshot : JSON::Any) : JSON::Any
-      build(%({"type":"hello","playerId":#{player_id.inspect},"snapshot":#{snapshot}}))
+      build(%({"type":"hello","playerId":#{player_id.inspect},"snapshot":#{snapshot.to_json}}))
     end
 
     def self.state(snapshot : JSON::Any) : JSON::Any
-      build(%({"type":"state","snapshot":#{snapshot}}))
+      build(%({"type":"state","snapshot":#{snapshot.to_json}}))
     end
 
     def self.error(message : String) : JSON::Any

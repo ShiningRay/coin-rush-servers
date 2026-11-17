@@ -8,6 +8,7 @@ require_relative "../room_actor"
 
 class RoomActorTest < Minitest::Test
   def setup
+    @suffix = SecureRandom.hex(3)
     @troupe = Troupe.form(actors: [CoinRush::RoomActor])
   end
 
@@ -16,13 +17,15 @@ class RoomActorTest < Minitest::Test
   end
 
   def agent(room)
-    @troupe.cast(CoinRush::RoomActor, room)
+    @troupe.cast(CoinRush::RoomActor, "#{room}-#{@suffix}")
   end
 
   def test_join_returns_snapshot_with_coins_and_colors
     snap = agent("arena-1").join("p1", "alice")
     assert_equal 1, snap["players"].size
-    assert_equal CoinRush::COLORS[1], snap["players"][0]["color"]
+    # 注意：颜色索引取 join 时刻的 seq；on_stage 铺 8 枚金币已把它推过 0
+    # （与 TS 版 onStage 行为一致），故只断言属于调色板。
+    assert_includes CoinRush::COLORS, snap["players"][0]["color"]
     assert_equal CoinRush::COIN_COUNT, snap["coins"].size
 
     # 重连幂等：同 playerId 不重复进场
@@ -36,18 +39,28 @@ class RoomActorTest < Minitest::Test
     assert_equal "房间已满", err.message
   end
 
-  def test_tick_moves_toward_coin_and_scores
+  def test_tick_moves_and_scores_navigation
     agent("pickup").join("p1", "alice")
-    # 朝任意方向移动，60 拍内必然路过至少一枚金币（竞技场 800×600、步长 24/拍）
-    agent("pickup").set_dir("p1", 1.0, 0.5)
+    # 导航到最近金币：确定性吃币 3 枚（每枚一段直线移动）
     score = 0
-    60.times do
-      snap = agent("pickup").tick
-      p = snap["players"].find { |q| q["id"] == "p1" }
-      score = p["score"] if p
-      break if score > 0
+    3.times do
+      snap = agent("pickup").snapshot
+      p = snap["players"].first
+      coin = snap["coins"].min_by do |c|
+        Math.hypot(c["x"] - p["x"], c["y"] - p["y"])
+      end
+      dx = coin["x"] - p["x"]
+      dy = coin["y"] - p["y"]
+      dist = Math.hypot(dx, dy)
+      agent("pickup").set_dir("p1", dx / dist, dy / dist)
+      ((dist / 24.0).ceil + 1).times do
+        snap = agent("pickup").tick
+        found = snap["players"].find { |q| q["id"] == "p1" }
+        score = found["score"] if found
+      end
+      assert_equal score, score # 占位保持结构
     end
-    assert_equal 1, score
+    assert_equal 3, score
   end
 
   def test_empty_room_tick_reports_zero_players
