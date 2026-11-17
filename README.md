@@ -45,7 +45,7 @@ node tools/probe.mjs "ws://127.0.0.1:8787/ws?room=probe"
 ## 契约与分层
 
 - [PROTOCOL.md](PROTOCOL.md)：线上协议 v1（帧、常量、房间生命周期、实现差异备忘）
-- 分层依据：[ADR-0007 外部端点分层](https://github.com/ShiningRay/troupe-planning/blob/main/docs/adr/0007-external-endpoint-layering.md)
+- 分层依据：[ADR-0007 外部端点分层](https://github.com/ShiningRay/troupe/blob/main/docs/adr/0007-external-endpoint-layering.md)
   ——各实现都是 L3 gateway（协议路由）+ L1/L2 actor 语义的组合，web 框架职责明确不在内。
 
 ## License
