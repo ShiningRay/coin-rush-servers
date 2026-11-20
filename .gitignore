@@ -6,3 +6,6 @@ _build/
 node_modules/
 .coin-rush/
 .coin-rush-data/
+
+# Go 编译产物
+/go/go

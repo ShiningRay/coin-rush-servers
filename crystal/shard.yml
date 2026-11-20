@@ -9,7 +9,7 @@ dependencies:
     branch: main
   troupe-gateway:
     github: ShiningRay/troupe-gateway
-    version: ">= 0.1.2"
+    branch: main
 targets:
   coin-rush-server:
     main: src/server.cr

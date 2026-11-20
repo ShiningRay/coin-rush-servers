@@ -5,6 +5,7 @@ package main
 import (
 	"encoding/json"
 	"math"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sync"
@@ -266,3 +267,5 @@ func sanitizeFilename(name string) string {
 	}
 	return string(out)
 }
+
+func rand01() float64 { return rand.Float64() }
